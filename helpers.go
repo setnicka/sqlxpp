@@ -23,10 +23,15 @@ func dbFields(values interface{}, excludeFields []string) []string {
 	fields := []string{}
 	if v.Kind() == reflect.Struct {
 		for i := 0; i < v.NumField(); i++ {
-			field := v.Type().Field(i).Tag.Get("db")
-			exclude := excludeFieldsMap[field]
-			if field != "" && !exclude {
-				fields = append(fields, field)
+			field := v.Type().Field(i)
+			dbName := field.Tag.Get("db")
+			_, exclude := excludeFieldsMap[dbName]
+			if dbName != "" && dbName != "-" && !exclude {
+				fields = append(fields, dbName)
+			}
+			// for embedded structs
+			if field.Type.Kind() == reflect.Struct {
+				fields = append(fields, dbFields(v.Field(i).Interface(), excludeFields)...)
 			}
 		}
 		return fields
